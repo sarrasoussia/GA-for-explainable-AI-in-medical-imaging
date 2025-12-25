@@ -4,12 +4,16 @@ Exemple d'utilisation du système GA pour l'IA explicable en imagerie médicale.
 
 import torch
 import numpy as np
+import os
+# Configurer matplotlib pour éviter les problèmes sur macOS
+import matplotlib
+matplotlib.use('Agg')  # Utiliser backend non-interactif
+import matplotlib.pyplot as plt
 from ga_medical_imaging.model import GAMedicalClassifier
 from ga_medical_imaging.data_utils import create_dummy_dataset, MedicalImageDataset
 from ga_medical_imaging.explainability import GAExplainabilityAnalyzer
 from torch.utils.data import DataLoader
 from torchvision import transforms
-import matplotlib.pyplot as plt
 
 
 def example_training():
@@ -56,8 +60,11 @@ def example_training():
         val_paths, val_labels, val_transform, (224, 224)
     )
     
-    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=8, shuffle=False)
+    # Utiliser num_workers=0 sur macOS pour éviter les problèmes de mutex
+    import platform
+    num_workers = 0 if platform.system() == 'Darwin' else 2
+    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=8, shuffle=False, num_workers=num_workers)
     
     # Créer le modèle
     print("\n3. Création du modèle GA...")
@@ -142,11 +149,13 @@ def example_explainability(model, device):
     
     # Visualisation
     print("\n4. Génération des visualisations...")
+    os.makedirs('explanations', exist_ok=True)
     fig = analyzer.visualize_explanations(
         test_image,
         analysis,
         save_path='explanations/example_explanation.png'
     )
+    plt.close(fig)  # Fermer la figure pour libérer la mémoire
     print("   ✓ Visualisations sauvegardées dans 'explanations/example_explanation.png'")
     
     return analysis

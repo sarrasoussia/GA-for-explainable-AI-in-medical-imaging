@@ -7,6 +7,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 from typing import Dict, Tuple, List
+import os
+# Configurer matplotlib pour éviter les problèmes sur macOS
+import matplotlib
+matplotlib.use('Agg')  # Utiliser backend non-interactif
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 

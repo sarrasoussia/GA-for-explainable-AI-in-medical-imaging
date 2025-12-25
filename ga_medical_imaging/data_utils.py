@@ -215,8 +215,11 @@ def load_dataset_from_directory(
     val_dataset = MedicalImageDataset(val_paths, val_labels, val_transform, image_size)
     
     # Créer les dataloaders
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=2)
+    # Note: num_workers=0 sur macOS pour éviter les problèmes de mutex
+    import platform
+    num_workers = 0 if platform.system() == 'Darwin' else 2
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=num_workers)
     
     return train_loader, val_loader
 

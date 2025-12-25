@@ -204,6 +204,26 @@ model = GAMedicalClassifier(num_classes=2, device='cpu')
 # ... entraînement et évaluation
 ```
 
+## 🔬 Contributions de Recherche
+
+Ce projet présente plusieurs contributions originales dans le domaine de l'IA explicable en imagerie médicale :
+
+### Contributions Principales
+
+1. **Représentation Multivecteur pour Images Médicales** : Développement d'un schéma de conversion d'images médicales en représentations multivecteurs GA qui capture explicitement différentes dimensions géométriques (scalaires, vecteurs, bivecteurs, trivecteurs).
+
+2. **Couches Neuronales sur Multivecteurs** : Implémentation de couches spécialisées (`GAMultivectorLayer`) opérant directement sur les multivecteurs avec produits géométriques adaptés.
+
+3. **Explicabilité Intrinsèque** : Système d'explication basé sur les composantes géométriques, fournissant des explications structurelles plutôt que post-hoc.
+
+4. **Analyse de Contribution des Composantes** : Méthode pour quantifier la contribution relative de chaque grade géométrique dans les décisions de classification.
+
+5. **Architecture End-to-End Explicable** : Conception d'une architecture complète qui maintient l'interprétabilité à chaque étape du pipeline.
+
+Pour plus de détails sur les contributions, voir **[CONTRIBUTIONS.md](CONTRIBUTIONS.md)**.
+
+Pour le plan d'expérimentation, voir **[EXPERIMENTS.md](EXPERIMENTS.md)**.
+
 ## 📚 Références
 
 Ce projet s'inspire de :
@@ -223,6 +243,19 @@ Pour contribuer au projet :
 ## 📄 Licence
 
 Ce projet est destiné à des fins de recherche et d'éducation.
+
+## 📖 Documentation de Recherche
+
+Ce projet fait partie d'un travail de recherche de master. La documentation complète inclut :
+
+- **[CONTRIBUTIONS.md](CONTRIBUTIONS.md)** : Contributions détaillées de ce travail
+- **[EXPERIMENTS.md](EXPERIMENTS.md)** : Plan d'expérimentation et évaluation
+- **[RESEARCH_PAPER_OUTLINE.md](RESEARCH_PAPER_OUTLINE.md)** : Plan de rédaction du mémoire
+
+Pour générer un résumé automatique des contributions :
+```bash
+python scripts/generate_contribution_summary.py
+```
 
 ## 🔮 Améliorations Futures
 
