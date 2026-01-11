@@ -157,12 +157,12 @@ def load_dataset_from_directory(
     """
     Charge un dataset depuis un répertoire organisé par classes.
     
-    Structure attendue:
+    Structure attendue (supports multiple naming conventions):
         data_dir/
-            sain/
-                *.png
-            tumeur/
-                *.png
+            sain/ or no_findings/ or normal/  (label=0)
+                *.png, *.jpg, etc.
+            tumeur/ or covid/ or covid-19/    (label=1)
+                *.png, *.jpg, etc.
     
     Args:
         data_dir: Répertoire racine des données
@@ -172,17 +172,48 @@ def load_dataset_from_directory(
     Returns:
         Tuple (train_loader, val_loader)
     """
-    # Trouver toutes les images
-    sain_paths = glob.glob(os.path.join(data_dir, 'sain', '*'))
-    tumeur_paths = glob.glob(os.path.join(data_dir, 'tumeur', '*'))
+    # Try different naming conventions for negative class (label=0)
+    negative_dirs = ['sain', 'no_findings', 'normal', 'negative', 'healthy']
+    positive_dirs = ['tumeur', 'covid', 'covid-19', 'positive']
+    
+    # Find negative class images
+    negative_paths = []
+    for neg_dir in negative_dirs:
+        neg_path = os.path.join(data_dir, neg_dir)
+        if os.path.exists(neg_path):
+            negative_paths = glob.glob(os.path.join(neg_path, '*'))
+            # Filter for image files
+            image_extensions = ['*.png', '*.jpg', '*.jpeg', '*.PNG', '*.JPG', '*.JPEG']
+            negative_paths = [p for p in negative_paths if any(p.endswith(ext.replace('*', '')) for ext in image_extensions)]
+            if negative_paths:
+                print(f"Found {len(negative_paths)} negative class images in {neg_dir}/")
+                break
+    
+    # Find positive class images
+    positive_paths = []
+    for pos_dir in positive_dirs:
+        pos_path = os.path.join(data_dir, pos_dir)
+        if os.path.exists(pos_path):
+            positive_paths = glob.glob(os.path.join(pos_path, '*'))
+            # Filter for image files
+            image_extensions = ['*.png', '*.jpg', '*.jpeg', '*.PNG', '*.JPG', '*.JPEG']
+            positive_paths = [p for p in positive_paths if any(p.endswith(ext.replace('*', '')) for ext in image_extensions)]
+            if positive_paths:
+                print(f"Found {len(positive_paths)} positive class images in {pos_dir}/")
+                break
+    
+    if not negative_paths:
+        raise ValueError(f"No negative class images found. Tried: {negative_dirs}")
+    if not positive_paths:
+        raise ValueError(f"No positive class images found. Tried: {positive_dirs}")
     
     # Créer les labels
-    sain_labels = [0] * len(sain_paths)
-    tumeur_labels = [1] * len(tumeur_paths)
+    negative_labels = [0] * len(negative_paths)
+    positive_labels = [1] * len(positive_paths)
     
     # Combiner
-    all_paths = sain_paths + tumeur_paths
-    all_labels = sain_labels + tumeur_labels
+    all_paths = negative_paths + positive_paths
+    all_labels = negative_labels + positive_labels
     
     # Mélanger
     indices = np.random.permutation(len(all_paths))

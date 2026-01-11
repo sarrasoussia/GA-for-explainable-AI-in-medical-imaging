@@ -38,13 +38,25 @@ MastersGA/
 
 ## 🚀 Installation
 
-### Prérequis
+### Option 1 : Google Colab (Recommandé pour débuter)
+
+Le moyen le plus simple de tester le projet est d'utiliser le notebook Colab :
+
+1. Ouvrez **[GA_Medical_Imaging_Colab.ipynb](GA_Medical_Imaging_Colab.ipynb)** sur [Google Colab](https://colab.research.google.com/)
+2. Exécutez les cellules dans l'ordre
+3. Le notebook contient tout le code nécessaire (version simplifiée)
+
+Voir **[COLAB_SETUP.md](COLAB_SETUP.md)** pour plus de détails.
+
+### Option 2 : Installation Locale
+
+#### Prérequis
 
 - Python 3.8+
 - PyTorch 2.0+
 - CUDA (optionnel, pour GPU)
 
-### Installation des dépendances
+#### Installation des dépendances
 
 ```bash
 pip install -r requirements.txt
@@ -248,9 +260,12 @@ Ce projet est destiné à des fins de recherche et d'éducation.
 
 Ce projet fait partie d'un travail de recherche de master. La documentation complète inclut :
 
+- **[RESEARCH_REPORT.md](RESEARCH_REPORT.md)** : **Rapport de recherche complet** (méthodologie, contributions, cadre expérimental)
 - **[CONTRIBUTIONS.md](CONTRIBUTIONS.md)** : Contributions détaillées de ce travail
+- **[CONTRIBUTIONS_SUMMARY.md](CONTRIBUTIONS_SUMMARY.md)** : Résumé concis des contributions
 - **[EXPERIMENTS.md](EXPERIMENTS.md)** : Plan d'expérimentation et évaluation
 - **[RESEARCH_PAPER_OUTLINE.md](RESEARCH_PAPER_OUTLINE.md)** : Plan de rédaction du mémoire
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** : Guide de référence rapide
 
 Pour générer un résumé automatique des contributions :
 ```bash
