@@ -1,6 +1,10 @@
 """
-Module d'explicabilité pour identifier quelles composantes géométriques
-influencent les décisions du modèle.
+Explainability module for identifying which geometric components
+influence model decisions.
+
+Provides intrinsic explainability through algebraic component decomposition,
+measuring the contribution of scalars, vectors, bivectors, and trivectors
+to model predictions.
 """
 
 import torch
@@ -17,16 +21,16 @@ from matplotlib.colors import LinearSegmentedColormap
 
 class GAExplainabilityAnalyzer:
     """
-    Analyseur d'explicabilité pour les modèles basés sur l'algèbre géométrique.
-    Identifie quelles composantes géométriques (scalaires, vecteurs, bivecteurs)
-    influencent le diagnostic.
+    Explainability analyzer for Geometric Algebra-based models.
+    Identifies which geometric components (scalars, vectors, bivectors, trivector)
+    influence model predictions.
     """
     
     def __init__(self, model: nn.Module, device: str = 'cpu'):
         """
         Args:
-            model: Modèle GA entraîné
-            device: Device PyTorch
+            model: Trained GA model
+            device: PyTorch device
         """
         self.model = model
         self.device = device
@@ -38,19 +42,19 @@ class GAExplainabilityAnalyzer:
         target_class: int = None
     ) -> Dict[str, torch.Tensor]:
         """
-        Calcule l'importance de chaque composante géométrique du multivecteur
-        en utilisant des gradients (Gradient-weighted Class Activation Mapping).
+        Computes the importance of each geometric component of the multivector
+        using gradients (Gradient-weighted Class Activation Mapping).
         
         Args:
-            images: Tensor d'images (B, C, H, W)
-            target_class: Classe cible pour le calcul des gradients (None = classe prédite)
+            images: Image tensor (B, C, H, W)
+            target_class: Target class for gradient computation (None = predicted class)
             
         Returns:
-            Dict avec l'importance de chaque composante:
-            - scalars_importance: importance des scalaires (intensités)
-            - vectors_importance: importance des vecteurs (gradients)
-            - bivectors_importance: importance des bivecteurs (orientations)
-            - trivector_importance: importance du trivecteur
+            Dict with importance of each component:
+            - scalars_importance: importance of scalars (intensities)
+            - vectors_importance: importance of vectors (gradients)
+            - bivectors_importance: importance of bivectors (orientations/textures)
+            - trivector_importance: importance of trivector
         """
         images = images.to(self.device)
         images.requires_grad = True
@@ -106,14 +110,14 @@ class GAExplainabilityAnalyzer:
         images: torch.Tensor
     ) -> Dict[str, np.ndarray]:
         """
-        Analyse détaillée des composantes géométriques et leur contribution
-        à la décision de classification.
+        Detailed analysis of geometric components and their contribution
+        to classification decisions.
         
         Returns:
-            Dict avec:
-            - component_contributions: contribution de chaque composante
-            - spatial_importance: carte d'importance spatiale
-            - geometric_features: caractéristiques géométriques extraites
+            Dict with:
+            - component_contributions: contribution of each component
+            - spatial_importance: spatial importance map
+            - geometric_features: extracted geometric features
         """
         self.model.eval()
         with torch.no_grad():
@@ -165,35 +169,35 @@ class GAExplainabilityAnalyzer:
         figsize: Tuple[int, int] = (15, 10)
     ):
         """
-        Visualise les explications du modèle.
+        Visualize model explanations.
         
         Args:
-            image: Image originale (H, W) ou (H, W, C)
-            analysis: Résultats de analyze_geometric_components
-            save_path: Chemin pour sauvegarder la figure
-            figsize: Taille de la figure
+            image: Original image (H, W) or (H, W, C)
+            analysis: Results from analyze_geometric_components
+            save_path: Path to save the figure
+            figsize: Figure size
         """
         if len(image.shape) == 3:
             image = np.mean(image, axis=2) if image.shape[2] > 1 else image[:, :, 0]
         
         fig, axes = plt.subplots(2, 3, figsize=figsize)
         
-        # Image originale
+        # Original image
         axes[0, 0].imshow(image, cmap='gray')
-        axes[0, 0].set_title('Image Originale')
+        axes[0, 0].set_title('Original Image')
         axes[0, 0].axis('off')
         
-        # Carte d'importance spatiale
+        # Spatial importance map
         spatial_imp = analysis['spatial_importance'][0]
         im1 = axes[0, 1].imshow(spatial_imp, cmap='hot', interpolation='bilinear')
-        axes[0, 1].set_title('Importance Spatiale (Magnitude Multivecteurs)')
+        axes[0, 1].set_title('Spatial Importance (Multivector Magnitude)')
         axes[0, 1].axis('off')
         plt.colorbar(im1, ax=axes[0, 1])
         
-        # Contributions des composantes
+        # Component contributions
         contributions = analysis['component_contributions']
-        comp_names = ['Scalaires\n(Intensités)', 'Vecteurs\n(Gradients)', 
-                     'Bivecteurs\n(Orientations)', 'Trivecteur\n(Relations)']
+        comp_names = ['Scalars\n(Intensities)', 'Vectors\n(Gradients)', 
+                     'Bivectors\n(Orientations)', 'Trivector\n(Relations)']
         comp_values = [
             contributions['scalars_contribution'],
             contributions['vectors_contribution'],
@@ -202,37 +206,37 @@ class GAExplainabilityAnalyzer:
         ]
         
         axes[0, 2].bar(comp_names, comp_values, color=['blue', 'green', 'orange', 'red'])
-        axes[0, 2].set_title('Contribution des Composantes Géométriques')
-        axes[0, 2].set_ylabel('Importance Relative')
+        axes[0, 2].set_title('Geometric Component Contributions')
+        axes[0, 2].set_ylabel('Relative Importance')
         axes[0, 2].tick_params(axis='x', rotation=45)
         
-        # Visualisation des composantes individuelles
+        # Individual component visualization
         features = analysis['geometric_features']
         
-        # Scalaires (intensités)
+        # Scalars (intensities)
         axes[1, 0].imshow(features['scalars'][0], cmap='gray')
-        axes[1, 0].set_title('Scalaires (Intensités)')
+        axes[1, 0].set_title('Scalars (Intensities)')
         axes[1, 0].axis('off')
         
-        # Vecteurs (magnitude des gradients)
+        # Vectors (gradient magnitude)
         vectors_mag = np.linalg.norm(features['vectors'][0], axis=-1)
         im2 = axes[1, 1].imshow(vectors_mag, cmap='viridis', interpolation='bilinear')
-        axes[1, 1].set_title('Vecteurs (Gradients)')
+        axes[1, 1].set_title('Vectors (Gradients)')
         axes[1, 1].axis('off')
         plt.colorbar(im2, ax=axes[1, 1])
         
-        # Bivecteurs (magnitude)
+        # Bivectors (magnitude)
         bivectors_mag = np.linalg.norm(features['bivectors'][0], axis=-1)
         im3 = axes[1, 2].imshow(bivectors_mag, cmap='plasma', interpolation='bilinear')
-        axes[1, 2].set_title('Bivecteurs (Orientations/Textures)')
+        axes[1, 2].set_title('Bivectors (Orientations/Textures)')
         axes[1, 2].axis('off')
         plt.colorbar(im3, ax=axes[1, 2])
         
-        # Ajouter les prédictions
+        # Add predictions
         probs = analysis['predictions']['probabilities'][0]
-        pred_text = f"Probabilités:\n"
-        pred_text += f"  Sain: {probs[0]:.3f}\n"
-        pred_text += f"  Tumeur: {probs[1]:.3f}"
+        pred_text = f"Probabilities:\n"
+        pred_text += f"  Class 0: {probs[0]:.3f}\n"
+        pred_text += f"  Class 1: {probs[1]:.3f}"
         axes[0, 2].text(0.5, -0.3, pred_text, transform=axes[0, 2].transAxes,
                        ha='center', fontsize=10, bbox=dict(boxstyle='round', facecolor='wheat'))
         
@@ -246,13 +250,13 @@ class GAExplainabilityAnalyzer:
     def generate_explanation_report(
         self,
         images: torch.Tensor,
-        class_names: List[str] = ['Sain', 'Tumeur']
+        class_names: List[str] = ['Class 0', 'Class 1']
     ) -> str:
         """
-        Génère un rapport textuel d'explication.
+        Generate a textual explanation report.
         
         Returns:
-            Rapport d'explication en texte
+            Explanation report as text
         """
         analysis = self.analyze_geometric_components(images)
         
@@ -262,50 +266,46 @@ class GAExplainabilityAnalyzer:
         contributions = analysis['component_contributions']
         
         report = f"""
-=== RAPPORT D'EXPLICATION - DIAGNOSTIC MÉDICAL ===
+=== EXPLANATION REPORT ===
 
-PRÉDICTION:
-  Classe prédite: {class_names[pred_class]}
-  Confiance: {probs[pred_class]:.1%}
+PREDICTION:
+  Predicted class: {class_names[pred_class]}
+  Confidence: {probs[pred_class]:.1%}
   
-CONTRIBUTION DES COMPOSANTES GÉOMÉTRIQUES:
+GEOMETRIC COMPONENT CONTRIBUTIONS:
 
-1. Scalaires (Intensités de pixels):
+1. Scalars (Pixel intensities):
    Contribution: {contributions['scalars_contribution']:.1%}
-   Interprétation: Représente les niveaux d'intensité bruts de l'image.
+   Interpretation: Represents raw intensity levels in the image.
    
-2. Vecteurs (Gradients spatiaux):
+2. Vectors (Spatial gradients):
    Contribution: {contributions['vectors_contribution']:.1%}
-   Interprétation: Capture les changements d'intensité (bords, contours).
+   Interpretation: Captures intensity changes (edges, contours).
    
-3. Bivecteurs (Orientations et textures):
+3. Bivectors (Orientations and textures):
    Contribution: {contributions['bivectors_contribution']:.1%}
-   Interprétation: Représente les orientations et les patterns de texture.
+   Interpretation: Represents orientations and texture patterns.
    
-4. Trivecteur (Relations complexes):
+4. Trivector (Complex relationships):
    Contribution: {contributions['trivector_contribution']:.1%}
-   Interprétation: Capture les relations géométriques complexes entre régions.
+   Interpretation: Captures complex geometric relationships between regions.
 
-ANALYSE:
+ANALYSIS:
 """
-        # Identifier la composante la plus importante
+        # Identify the most important component
         max_comp = max(contributions.items(), key=lambda x: x[1])
         comp_names = {
-            'scalars_contribution': 'les intensités de pixels',
-            'vectors_contribution': 'les gradients spatiaux',
-            'bivectors_contribution': 'les orientations et textures',
-            'trivector_contribution': 'les relations géométriques complexes'
+            'scalars_contribution': 'pixel intensities',
+            'vectors_contribution': 'spatial gradients',
+            'bivectors_contribution': 'orientations and textures',
+            'trivector_contribution': 'complex geometric relationships'
         }
         
-        report += f"La composante la plus influente est {comp_names[max_comp[0]]} "
-        report += f"({max_comp[1]:.1%} de la contribution totale).\n"
+        report += f"The most influential component is {comp_names[max_comp[0]]} "
+        report += f"({max_comp[1]:.1%} of total contribution).\n"
         
-        if pred_class == 1:  # Tumeur
-            report += "\nLe modèle a identifié des caractéristiques géométriques "
-            report += "suggérant la présence d'une tumeur.\n"
-        else:
-            report += "\nLe modèle n'a pas détecté de caractéristiques "
-            report += "géométriques anormales suggérant une tumeur.\n"
+        report += "\nGA-based explanations decompose predictions into algebraic components, "
+        report += "allowing direct inspection of contributing factors, unlike post-hoc saliency methods.\n"
         
         return report
 

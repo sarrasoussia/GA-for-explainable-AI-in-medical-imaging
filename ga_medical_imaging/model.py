@@ -1,5 +1,8 @@
 """
-Modèle de classification basé sur l'algèbre géométrique pour l'imagerie médicale.
+Geometric Algebra-based classification models for image classification.
+
+This module implements GA-based classifiers that represent images as multivectors
+and provide intrinsic explainability through algebraic component decomposition.
 """
 
 import torch
@@ -9,8 +12,10 @@ from .ga_representation import GAFeatureExtractor, GeometricAlgebraRepresentatio
 
 class GAMedicalClassifier(nn.Module):
     """
-    Classificateur utilisant l'algèbre géométrique pour la classification
-    d'images médicales (tissu sain vs tumeur).
+    Geometric Algebra-based classifier for image classification.
+    
+    Represents images as multivectors in GA space and provides intrinsic
+    explainability through algebraic component decomposition.
     """
     
     def __init__(
@@ -22,10 +27,10 @@ class GAMedicalClassifier(nn.Module):
     ):
         """
         Args:
-            num_classes: Nombre de classes (2 pour binaire: sain/tumeur)
-            multivector_dim: Dimension des multivecteurs GA
-            feature_dim: Dimension des caractéristiques extraites
-            device: Device PyTorch
+            num_classes: Number of classes (2 for binary classification)
+            multivector_dim: Dimension of GA multivectors
+            feature_dim: Dimension of extracted features
+            device: PyTorch device
         """
         super().__init__()
         self.device = device
@@ -35,19 +40,27 @@ class GAMedicalClassifier(nn.Module):
         # Convertisseur image -> multivecteur
         self.ga_representation = GeometricAlgebraRepresentation(dim=3, device=device)
         
-        # Extracteur de caractéristiques GA
+        # Extracteur de caractéristiques GA (enhanced capacity)
         self.feature_extractor = GAFeatureExtractor(
             multivector_dim=multivector_dim,
             feature_dim=feature_dim
         )
         
-        # Classificateur final
+        # Enhanced classifier with better regularization
         self.classifier = nn.Sequential(
-            nn.Linear(feature_dim, 64),
-            nn.ReLU(),
+            nn.Linear(feature_dim, feature_dim // 2),
+            nn.BatchNorm1d(feature_dim // 2),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.4),
+            nn.Linear(feature_dim // 2, feature_dim // 4),
+            nn.BatchNorm1d(feature_dim // 4),
+            nn.ReLU(inplace=True),
             nn.Dropout(0.3),
-            nn.Linear(64, num_classes)
+            nn.Linear(feature_dim // 4, num_classes)
         )
+        
+        # Move model to device
+        self.to(device)
         
         # Stockage des activations pour l'explicabilité
         self.activations = {}
@@ -106,8 +119,8 @@ class GAMedicalClassifier(nn.Module):
 
 class GAMedicalClassifierWithAttention(nn.Module):
     """
-    Version améliorée avec mécanisme d'attention pour mieux identifier
-    les régions importantes.
+    GA-based classifier with attention mechanism for identifying
+    salient features in the representation.
     """
     
     def __init__(

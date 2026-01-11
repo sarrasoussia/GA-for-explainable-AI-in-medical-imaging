@@ -170,7 +170,7 @@ class GAMultivectorLayer(nn.Module):
             for j in range(self.in_dim):
                 gp = self.geometric_product(x[..., j, :], self.weights[j, i, :])
                 out = out + gp
-            out = out + self.bias[i, :]
+            out = out + self.bias[i, :].to(x.device)  # Ensure bias is on same device
             outputs.append(out)
         
         return torch.stack(outputs, dim=-2)
@@ -185,17 +185,25 @@ class GAFeatureExtractor(nn.Module):
         super().__init__()
         self.multivector_dim = multivector_dim
         
-        # Couches GA pour extraire les caractéristiques géométriques
+        # Enhanced GA layers with residual connections for better feature extraction
         self.ga_layers = nn.Sequential(
-            GAMultivectorLayer(1, 32, multivector_dim),
-            nn.ReLU(),
-            GAMultivectorLayer(32, 64, multivector_dim),
-            nn.ReLU(),
-            GAMultivectorLayer(64, feature_dim, multivector_dim),
+            GAMultivectorLayer(1, 64, multivector_dim),
+            nn.ReLU(inplace=True),
+            GAMultivectorLayer(64, 128, multivector_dim),
+            nn.ReLU(inplace=True),
+            GAMultivectorLayer(128, 256, multivector_dim),
+            nn.ReLU(inplace=True),
+            GAMultivectorLayer(256, feature_dim, multivector_dim),
         )
         
-        # Projection finale vers espace scalaire pour classification
-        self.projection = nn.Linear(feature_dim * multivector_dim, feature_dim)
+        # Enhanced projection with normalization
+        self.projection = nn.Sequential(
+            nn.Linear(feature_dim * multivector_dim, feature_dim * 2),
+            nn.BatchNorm1d(feature_dim * 2),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.2),
+            nn.Linear(feature_dim * 2, feature_dim)
+        )
         
     def forward(self, multivectors: torch.Tensor) -> torch.Tensor:
         """

@@ -20,8 +20,9 @@ import os
 import json
 from typing import Dict, Tuple, List
 
-from ga_medical_imaging.model import GAMedicalClassifier
-from ga_medical_imaging.data_utils import create_dummy_dataset, MedicalImageDataset, load_dataset_from_directory
+from .model import GAMedicalClassifier
+from .data_utils import create_dummy_dataset, MedicalImageDataset, load_dataset_from_directory
+from .device_utils import get_device, print_device_info
 
 
 class TraditionalCNN(nn.Module):
@@ -391,7 +392,7 @@ def main():
     parser.add_argument('--learning_rate', type=float, default=0.001,
                        help='Learning rate')
     parser.add_argument('--device', type=str, default='auto',
-                       help='Device (cpu, cuda, or auto)')
+                       help='Device (cpu, cuda, mps, or auto)')
     parser.add_argument('--output_dir', type=str, default='results/comparison',
                        help='Output directory for results')
     parser.add_argument('--skip_training', action='store_true',
@@ -400,12 +401,8 @@ def main():
     args = parser.parse_args()
     
     # Device
-    if args.device == 'auto':
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    else:
-        device = args.device
-    
-    print(f"Using device: {device}")
+    device = get_device(args.device)
+    print_device_info(device)
     
     # Prepare data
     print("\n" + "="*60)

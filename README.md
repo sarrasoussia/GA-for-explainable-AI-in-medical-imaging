@@ -1,22 +1,25 @@
 # Geometric Algebra for Explainable AI in Medical Imaging
 
-A comprehensive implementation of **Geometric Algebra (GA)-based Explainable AI** for medical image classification, specifically applied to **COVID-19 detection from chest X-ray images**.
+A comprehensive implementation of **Geometric Algebra (GA)-based Explainable AI** for medical image classification, focusing on **intrinsic explainability** and **fair comparison** with traditional CNN approaches.
 
 ## 🎯 Project Overview
 
-This project introduces a novel approach that:
-- **Represents medical images as multivectors** in Geometric Algebra space
-- **Provides intrinsic explainability** through geometric component analysis
-- **Achieves competitive performance** compared to state-of-the-art baseline methods
-- **Offers interpretable insights** for clinical decision-making
+This work investigates whether geometric algebra–based representations can offer more transparent and robust learning behavior than conventional deep learning approaches in medical imaging benchmarks. The project evaluates:
+
+- **Representation expressiveness**: GA multivectors vs pixel tensors
+- **Intrinsic explainability**: GA geometric components vs post-hoc methods (Grad-CAM)
+- **Fair comparison**: Same dataset, same evaluation protocol, same metrics
+- **Statistical validation**: Significance testing and effect sizes
+
+**Note**: This work does not aim to replace clinical diagnostic systems, but rather investigates algorithmic properties of geometric algebra representations in medical imaging benchmarks.
 
 ### Key Innovation
 
 Unlike traditional CNNs that treat images as flat pixel arrays, our approach:
 - Encodes **explicit geometric structure** (scalars, vectors, bivectors, trivectors)
-- Provides **intrinsic explainability** (not post-hoc approximations)
+- Provides **intrinsic explainability** through algebraic component decomposition
 - Maintains **interpretability** throughout the learning pipeline
-- Enables **geometric reasoning** about medical image features
+- Enables **geometric reasoning** about image features in a structured representation space
 
 ## 📚 Geometric Algebra Concepts
 
@@ -33,58 +36,50 @@ This representation captures rich geometric features that are naturally interpre
 
 ```
 MastersGA/
-├── ga_medical_imaging/
-│   ├── __init__.py
-│   ├── ga_representation.py          # Image → multivector conversion
-│   ├── model.py                      # GA-based classification models
-│   ├── explainability.py             # Intrinsic explainability module
-│   ├── data_utils.py                 # Dataset loading and preprocessing
-│   ├── train.py                      # Training script
-│   ├── evaluate_and_explain.py      # Evaluation and explanation generation
-│   ├── evaluate_5fold_cv.py          # 5-fold cross-validation evaluation
-│   ├── compare_with_baselines.py    # Baseline comparison framework
-│   ├── compare_models.py             # GA vs CNN comparison
-│   ├── cgan_generator.py             # Conditional GAN for data augmentation
-│   ├── train_cgan.py                 # cGAN training script
-│   ├── generate_synthetic_dataset.py # Synthetic image generation
-│   ├── organize_covid_dataset.py     # COVID-19 dataset organization
-│   ├── run_baseline_comparison.py    # Complete evaluation pipeline
-│   └── run_cgan_pipeline.py          # cGAN augmentation pipeline
-├── GA_Medical_Imaging_Colab.ipynb    # Interactive Colab notebook
-├── scripts/
-│   └── generate_contribution_summary.py  # Auto-generate contribution summary
-├── data/
-│   └── covid_chestxray/              # Organized COVID-19 dataset
-├── requirements.txt                  # Python dependencies
-└── README.md                         # This file
+├── ga_medical_imaging/          # Main package
+│   ├── ga_representation.py    # Image → multivector conversion
+│   ├── model.py                 # GA-based classification models
+│   ├── explainability.py        # Intrinsic explainability module
+│   ├── gradcam.py               # Grad-CAM for CNN baselines
+│   ├── explainability_comparison.py  # GA vs Grad-CAM comparison
+│   ├── statistical_comparison.py    # Significance testing
+│   ├── preprocessing.py         # Standardized preprocessing
+│   ├── imbalance_handling.py   # Class imbalance solutions
+│   ├── data_utils.py            # Dataset loading
+│   ├── evaluate_5fold_cv.py    # 5-fold cross-validation
+│   ├── compare_models.py        # GA vs CNN comparison
+│   ├── train_professional.py   # Professional training script
+│   └── reproducibility.py      # Reproducibility utilities
+├── GA_Medical_Imaging_Colab.ipynb  # Interactive Colab notebook
+├── experiments/                 # Experimental scripts
+├── data/                       # Dataset directory
+└── README.md                   # This file
 ```
 
 ## 🚀 Quick Start
 
-### Option 1: Google Colab (Recommended for beginners)
-
-The easiest way to explore the project:
+### Option 1: Google Colab (Recommended)
 
 1. Open **[GA_Medical_Imaging_Colab.ipynb](GA_Medical_Imaging_Colab.ipynb)** on [Google Colab](https://colab.research.google.com/)
 2. Run cells in order
-3. The notebook includes:
-   - Baseline comparison with state-of-the-art methods
+3. The notebook includes complete workflow:
+   - Baseline comparison
    - GA framework demonstration
    - Training and evaluation
-   - Intrinsic explainability analysis
+   - Explainability comparison (GA vs Grad-CAM)
+   - Statistical analysis
 
 ### Option 2: Local Installation
 
 #### Prerequisites
-
 - Python 3.8+
 - PyTorch 2.0+
 - CUDA (optional, for GPU acceleration)
 
 #### Install Dependencies
-
 ```bash
 pip install -r requirements.txt
+pip install -e .  # Install package in development mode
 ```
 
 ## 💻 Usage
@@ -104,43 +99,30 @@ python -m ga_medical_imaging.organize_covid_dataset \
 ```
 data/covid_chestxray/
 ├── covid/              # COVID-19 positive cases (label=1)
-│   ├── image1.jpg
-│   └── ...
 └── no_findings/        # Normal/negative cases (label=0)
-    ├── image1.jpg
-    └── ...
 ```
 
-**Note**: The dataset has class imbalance (575 COVID vs 22 No Finding). See [cGAN Augmentation](#cgan-based-data-augmentation) for balancing.
-
-#### Using Your Own Data
-
-Organize images in the following structure:
-```
-data/
-├── covid/ or tumeur/ or positive/    # Positive class (label=1)
-│   └── *.png, *.jpg
-└── no_findings/ or sain/ or normal/   # Negative class (label=0)
-    └── *.png, *.jpg
-```
+**Note**: The dataset has class imbalance (1150 COVID vs 44 No Finding, ratio 26:1). See [Class Imbalance Handling](#class-imbalance-handling) section.
 
 ### 2. Training the Model
 
-#### Basic Training
+#### Professional Training (Recommended)
 
 ```bash
-python -m ga_medical_imaging.train \
+python -m ga_medical_imaging.train_professional \
     --data_dir data/covid_chestxray \
     --num_epochs 50 \
     --batch_size 16 \
-    --learning_rate 0.001
+    --learning_rate 0.001 \
+    --save_dir checkpoints
 ```
 
-#### With Dummy Dataset (for testing)
-
-```bash
-python -m ga_medical_imaging.train --num_epochs 20
-```
+Features:
+- Early stopping
+- Learning rate scheduling (Cosine Annealing with Warm Restarts)
+- Mixed precision training (CUDA)
+- Gradient clipping
+- Class-weighted loss (handles imbalance automatically)
 
 ### 3. Evaluation
 
@@ -153,95 +135,174 @@ python -m ga_medical_imaging.evaluate_5fold_cv \
     --output_dir results/5fold_cv
 ```
 
-This generates comprehensive metrics:
+This generates:
 - Accuracy, Sensitivity, Specificity, Precision, F1-Score, ROC AUC
 - Mean ± std across 5 folds
 - Results saved in JSON format
+- **Automatically uses class-weighted loss** to handle imbalance
 
-#### Compare with Baselines
+### 4. Explainability Comparison
 
-```bash
-python -m ga_medical_imaging.compare_with_baselines \
-    --cv_results results/5fold_cv/cv_results.json \
-    --output_dir results/comparison
+#### Compare GA vs Grad-CAM
+
+```python
+from ga_medical_imaging.compare_models import TraditionalCNN
+from ga_medical_imaging.gradcam import create_gradcam_for_cnn
+from ga_medical_imaging.explainability_comparison import ExplainabilityComparator
+
+# Train or load both models
+ga_model = ...  # Your trained GA model
+cnn_model = TraditionalCNN(num_classes=2, input_channels=1).to(device)
+# ... train CNN model ...
+
+# Create comparator
+gradcam = create_gradcam_for_cnn(cnn_model)
+comparator = ExplainabilityComparator(
+    ga_model=ga_model,
+    cnn_model=cnn_model,
+    gradcam=gradcam,
+    device=device
+)
+
+# Compare explanations
+comparison = comparator.compare_explanations(image, target_class=label)
+comparator.visualize_comparison(image, comparison, save_path='comparison.png')
 ```
 
-This compares your results with:
-- **DarkCovidNet**: Accuracy ≈ 98%, Sensitivity ≈ 95%, Specificity ≈ 95%, Precision ≈ 98%, F1 ≈ 0.97
-- **VGG-19**: Accuracy ≈ 98.75%
-- **VGG16 + cGAN**: Accuracy ≈ 99.76% (Electronics 2022)
+### 5. Statistical Significance Testing
 
-### 4. Explainability Analysis
+```python
+from ga_medical_imaging.statistical_comparison import (
+    compare_multiple_metrics,
+    generate_statistical_report
+)
 
-```bash
-python -m ga_medical_imaging.evaluate_and_explain \
-    --checkpoint checkpoints/best_model.pth \
-    --image path/to/image.png \
-    --output_dir explanations
+# After running 5-fold CV for both models
+ga_results = ...  # From evaluate_5fold_cv
+cnn_results = ...  # From evaluate_5fold_cv
+
+# Compare all metrics
+comparison = compare_multiple_metrics(ga_results, cnn_results)
+
+# Generate report
+report = generate_statistical_report(
+    'GA Model',
+    'CNN Baseline',
+    comparison,
+    output_path='results/statistical_comparison.txt'
+)
 ```
 
-Generates:
-- Geometric component contribution analysis
-- Spatial importance maps
-- Visual explanations
-- Textual explanation reports
+## ⚖️ Fair Comparison Methodology
 
-## 🎨 cGAN-Based Data Augmentation
+### What MUST Match Exactly
 
-To handle class imbalance and match the Electronics 2022 approach:
+1. **Dataset**: Use `ieee8023/covid-chestxray-dataset` (same as DarkCovidNet, VGG-19)
+2. **Evaluation Protocol**: 5-fold cross-validation (matching DarkCovidNet)
+3. **Metrics**: Accuracy, Sensitivity, Specificity, Precision, F1-Score, ROC AUC
+4. **Preprocessing**: Standardized transforms (see `preprocessing.py`)
+5. **Task**: Binary classification (COVID-19 vs no-findings)
 
-### Complete Pipeline
+### What CAN Differ (But Should Be Fair)
 
-```bash
-python -m ga_medical_imaging.run_cgan_pipeline \
-    --data_dir data/covid_chestxray
+1. **Model Architecture**: Different architectures are expected (GA vs CNN)
+2. **Training Procedure**: Can differ, but should be:
+   - Similar computational budget
+   - Both optimized (not one optimized, one default)
+   - Both use best practices (early stopping, LR scheduling)
+
+### Recommended Reporting Structure
+
+Report results in two categories:
+
+**1. Primary Comparison (No Augmentation)**
+- GA model vs DarkCovidNet, VGG-19
+- Same original dataset
+- Same evaluation protocol
+
+**2. Explainability Comparison**
+- GA intrinsic explanations vs Grad-CAM (post-hoc)
+- Quantitative metrics: spatial correlation, overlap, sparsity
+- Statistical significance testing
+
+### Ensuring Fairness
+
+✅ **Already implemented**:
+- Standardized preprocessing (`preprocessing.py`)
+- Same evaluation protocol (5-fold CV)
+- Class-weighted loss for both models (fair imbalance handling)
+- Reproducibility utilities (`reproducibility.py`)
+
+## ⚖️ Class Imbalance Handling
+
+### The Problem
+
+Your dataset has severe imbalance:
+- COVID-19: 1150 images (96.3%)
+- No Finding: 44 images (3.7%)
+- **Imbalance ratio: 26:1** ⚠️
+
+### ✅ Recommended Solution: Class-Weighted Loss
+
+**Why it's better than cGAN**:
+- ✅ Stable and reliable (no collapse)
+- ✅ Simple (one line of code)
+- ✅ No extra training time
+- ✅ Fair comparison (both models use same weights)
+
+**How it works**:
+- Automatically penalizes misclassifying the minority class more heavily
+- Weights calculated as: `weight[i] = total_samples / (num_classes * class_i_count)`
+
+**Usage**:
+```python
+from ga_medical_imaging.imbalance_handling import create_weighted_loss, print_imbalance_info
+
+# Analyze imbalance
+labels = [dataset[i][1] for i in range(len(dataset))]
+print_imbalance_info(labels)
+
+# Create weighted loss
+criterion = create_weighted_loss(labels, device=device)
+
+# Use in training (automatically handles imbalance)
 ```
 
-This automatically:
-1. Trains a conditional GAN
-2. Generates synthetic COVID-19 images
-3. Creates a balanced dataset
-4. Runs 5-fold CV evaluation
-5. Compares with baselines
+**Already integrated**: `evaluate_5fold_cv.py` uses weighted loss by default!
 
-### Step-by-Step
+### Alternative Solutions
 
-```bash
-# 1. Train cGAN
-python -m ga_medical_imaging.train_cgan \
-    --data_dir data/covid_chestxray \
-    --num_epochs 100 \
-    --save_dir checkpoints/cgan
+1. **Weighted Random Sampling**: Balances batches during training
+2. **Focal Loss**: Focuses on hard examples
+3. **Combined Approach**: Both weighted sampling + weighted loss
 
-# 2. Generate balanced dataset
-python -m ga_medical_imaging.generate_synthetic_dataset \
-    --original_data_dir data/covid_chestxray \
-    --output_dir data/covid_chestxray_balanced \
-    --cgan_checkpoint checkpoints/cgan/cgan_final.pth
+See `imbalance_handling.py` for all options.
 
-# 3. Evaluate on balanced dataset
-python -m ga_medical_imaging.evaluate_5fold_cv \
-    --data_dir data/covid_chestxray_balanced
-```
+## 📊 Evaluation Framework
 
-See **[CGAN_AUGMENTATION_GUIDE.md](guided%20reports/CGAN_AUGMENTATION_GUIDE.md)** for detailed documentation.
+### Core Metrics
 
-## 📊 Baseline Comparison
-
-### Reported Baseline Results
-
-| Method | Accuracy | Sensitivity | Specificity | Precision | F1-Score | Evaluation |
-|--------|----------|-------------|-------------|-----------|----------|------------|
-| **DarkCovidNet** | 98% | 95% | 95% | 98% | 0.97 | 5-fold CV |
-| **VGG-19** | 98.75% | - | - | - | - | Not specified |
-| **VGG16 + cGAN** | 99.76% | - | - | - | - | Not specified |
+- **Accuracy**: Overall classification correctness
+- **Sensitivity (Recall)**: True Positive Rate
+- **Specificity**: True Negative Rate
+- **Precision**: Positive Predictive Value
+- **F1-Score**: Harmonic mean of precision and recall
+- **ROC AUC**: Area under ROC curve
 
 ### Evaluation Protocol
 
-For fair comparison, we use:
+For fair comparison:
 - **5-fold Cross-Validation**: Matching DarkCovidNet protocol
-- **Same Dataset**: ieee8023/covid-chestxray-dataset
-- **Comprehensive Metrics**: Accuracy, Sensitivity, Specificity, Precision, F1-Score, ROC AUC
+- **Standardized Preprocessing**: Same transforms for all models
+- **Class-Weighted Loss**: Handles imbalance fairly
+- **Statistical Testing**: Validate significance of differences
+
+### Baseline Methods
+
+We compare against:
+- **DarkCovidNet**: Accuracy ≈ 98%, Sensitivity ≈ 95%, Specificity ≈ 95%, Precision ≈ 98%, F1 ≈ 0.97
+- **VGG-19**: Accuracy ≈ 98.75%
+- **VGG16 + cGAN**: Accuracy ≈ 99.76% (Electronics 2022) - Reference only
 
 ## 🔬 Model Architecture
 
@@ -253,7 +314,7 @@ The main model consists of:
 2. **GAFeatureExtractor**: Extracts geometric features via GA layers
    - `GAMultivectorLayer`: Neural layers operating on multivectors
    - Geometric product adapted for PyTorch
-3. **Classifier**: Final classification layers
+3. **Classifier**: Final classification layers with BatchNorm and Dropout
 
 ### Architecture Flow
 
@@ -265,19 +326,18 @@ GeometricAlgebraRepresentation
 Multivectors (B, H, W, 8)
     ↓
 GAFeatureExtractor
-    ├─ GAMultivectorLayer(1 → 32)
-    ├─ ReLU
-    ├─ GAMultivectorLayer(32 → 64)
+    ├─ GAMultivectorLayer(1 → 64)
     ├─ ReLU
     ├─ GAMultivectorLayer(64 → 128)
-    └─ Projection
+    ├─ ReLU
+    ├─ GAMultivectorLayer(128 → 256)
+    └─ Projection (with BatchNorm, Dropout)
     ↓
-Features (B, 128)
+Features (B, 256)
     ↓
 Classifier
-    ├─ Linear(128 → 64)
-    ├─ ReLU
-    ├─ Dropout(0.3)
+    ├─ Linear(256 → 128) + BatchNorm + ReLU + Dropout
+    ├─ Linear(128 → 64) + BatchNorm + ReLU + Dropout
     └─ Linear(64 → num_classes)
     ↓
 Logits (B, num_classes)
@@ -290,53 +350,110 @@ Logits (B, num_classes)
 Unlike post-hoc methods (Grad-CAM, SHAP, LIME), our approach provides **intrinsic explainability**:
 
 - **Direct Access**: Explanations based on actual model structure
-- **Geometric Interpretability**: Decisions explained in terms of geometric concepts
-- **Stability**: Explanations are stable under transformations
-- **No Approximation**: Direct access to geometric components
+- **Algebraic Decomposition**: Decisions explained in terms of geometric components
+- **Stability**: Explanations are stable under small input perturbations
+- **No Approximation**: Direct access to representation components
+- **Structured**: Explanations decompose into interpretable geometric components
 
 ### Explainability Features
 
 1. **Geometric Component Analysis**
-   - Contribution of scalars (intensities)
-   - Contribution of vectors (gradients)
-   - Contribution of bivectors (textures/orientations)
+   - Contribution of scalars (pixel intensities)
+   - Contribution of vectors (spatial gradients)
+   - Contribution of bivectors (orientations and textures)
    - Contribution of trivector (complex relationships)
 
 2. **Spatial Importance Maps**
    - Multivector magnitude visualization
-   - Region importance identification
+   - Salient feature identification
 
-3. **Explanation Reports**
-   - Quantitative component contributions
-   - Qualitative interpretations
-   - Clinical relevance analysis
+3. **Comparison with Grad-CAM**
+   - Quantitative metrics: spatial correlation, overlap, sparsity
+   - Side-by-side visualization
+   - Stability analysis
 
 ### Example Explanation Output
 
 ```
-=== EXPLANATION REPORT - MEDICAL DIAGNOSIS ===
+=== EXPLANATION REPORT ===
 
 PREDICTION:
-  Predicted class: COVID-19
+  Predicted class: 1 (COVID-19)
   Confidence: 87.3%
   
 GEOMETRIC COMPONENT CONTRIBUTIONS:
 
-1. Scalars (Pixel intensities):
-   Contribution: 25.3%
-   
-2. Vectors (Spatial gradients):
-   Contribution: 30.1%
-   
-3. Bivectors (Orientations and textures):
-   Contribution: 35.2%
-   
-4. Trivector (Complex relationships):
-   Contribution: 9.4%
+1. Scalars (Pixel intensities): 25.3%
+2. Vectors (Spatial gradients): 30.1%
+3. Bivectors (Orientations and textures): 35.2%
+4. Trivector (Complex relationships): 9.4%
 
 ANALYSIS:
 The most influential component is orientations and textures 
-(35.2% of total contribution).
+(35.2% of total contribution), indicating that texture features
+are the primary contributing factors in this prediction.
+```
+
+## 📁 File Structure & Workflow
+
+### Core Modules
+
+**Foundation**:
+- `reproducibility.py` - Set random seeds for reproducible experiments
+- `device_utils.py` - Device detection (CPU/CUDA/MPS)
+- `preprocessing.py` - Standardized preprocessing transforms
+
+**Data**:
+- `data_utils.py` - Dataset loading and management
+- `imbalance_handling.py` - Class imbalance solutions
+- `organize_covid_dataset.py` - Dataset organization utility
+
+**GA Core**:
+- `ga_representation.py` - Image → multivector conversion, GA layers
+- `model.py` - GA-based classification models
+
+**Explainability**:
+- `explainability.py` - GA intrinsic explainability
+- `gradcam.py` - Grad-CAM for CNN baselines
+- `explainability_comparison.py` - GA vs Grad-CAM comparison
+
+**Evaluation**:
+- `evaluate_5fold_cv.py` - 5-fold cross-validation
+- `statistical_comparison.py` - Significance testing
+- `compare_models.py` - GA vs CNN direct comparison
+- `compare_with_baselines.py` - Compare with published results
+
+**Training**:
+- `train_professional.py` - Professional training with best practices
+
+### Typical Workflow
+
+```
+1. Setup & Data Preparation
+   reproducibility.py → Set seeds
+   preprocessing.py → Define transforms
+   data_utils.py → Load dataset
+   imbalance_handling.py → Handle class imbalance
+
+2. Model Definition
+   ga_representation.py → Define GA representation
+   model.py → Create GA model
+
+3. Training
+   train_professional.py → Train model
+
+4. Evaluation
+   evaluate_5fold_cv.py → Run 5-fold CV
+   statistical_comparison.py → Test significance
+
+5. Explainability Comparison
+   explainability.py → Analyze GA explanations
+   gradcam.py → Generate Grad-CAM for CNN
+   explainability_comparison.py → Compare both
+
+6. Reporting
+   compare_models.py → Direct GA vs CNN comparison
+   compare_with_baselines.py → Compare with literature
 ```
 
 ## 🔧 Configuration
@@ -347,30 +464,19 @@ The most influential component is orientations and textures
 - `--batch_size`: Batch size (default: 16)
 - `--learning_rate`: Learning rate (default: 0.001)
 - `--image_size`: Image size (default: 224 224)
+- `--early_stopping_patience`: Early stopping patience (default: 15)
+- `--weight_decay`: L2 regularization (default: 1e-4)
 
 ### Model Parameters
 
 - `multivector_dim`: Multivector dimension (8 for GA 3D)
-- `feature_dim`: Extracted feature dimension (128)
+- `feature_dim`: Extracted feature dimension (256)
 - `num_classes`: Number of classes (2 for binary)
 
 ### Evaluation Parameters
 
 - `--n_splits`: Number of CV folds (default: 5)
-- `--balance_ratio`: cGAN balance ratio (1.0 = fully balanced)
-
-## 📊 Evaluation Metrics
-
-The framework computes comprehensive metrics:
-
-- **Accuracy**: Overall classification correctness
-- **Sensitivity (Recall)**: True Positive Rate
-- **Specificity**: True Negative Rate
-- **Precision**: Positive Predictive Value
-- **F1-Score**: Harmonic mean of precision and recall
-- **ROC AUC**: Area under ROC curve
-
-All metrics match baseline reporting format for fair comparison.
+- `--handle_imbalance`: Use class-weighted loss (default: True)
 
 ## 🧪 Testing
 
@@ -388,19 +494,11 @@ model = GAMedicalClassifier(num_classes=2, device='cpu')
 # ... training and evaluation
 ```
 
-### Run Example Scripts
-
-```bash
-python example_usage.py
-```
-
 ## 🔬 Research Contributions
-
-This project presents several original contributions to explainable AI in medical imaging:
 
 ### Main Contributions
 
-1. **Multivector Representation for Medical Images**
+1. **Multivector Representation for Image Classification**
    - Explicit geometric structure encoding
    - Scalars, vectors, bivectors, trivectors
    - Code: `ga_representation.py::GeometricAlgebraRepresentation`
@@ -412,102 +510,64 @@ This project presents several original contributions to explainable AI in medica
 
 3. **Intrinsic Explainability**
    - Explanations based on model structure
-   - Not post-hoc approximations
+   - Direct algebraic component decomposition
    - Code: `explainability.py::GAExplainabilityAnalyzer`
 
-4. **Baseline Comparison Framework**
-   - Comprehensive comparison with state-of-the-art
+4. **Fair Comparison Framework**
+   - Standardized preprocessing
    - Same evaluation protocol
-   - Code: `compare_with_baselines.py`, `evaluate_5fold_cv.py`
+   - Statistical significance testing
+   - Code: `evaluate_5fold_cv.py`, `statistical_comparison.py`
 
-5. **cGAN-Based Augmentation**
-   - Conditional GAN for class balancing
-   - Matches Electronics 2022 approach
-   - Code: `cgan_generator.py::ConditionalGAN`
+5. **Explainability Comparison**
+   - GA intrinsic vs Grad-CAM (post-hoc)
+   - Quantitative comparison metrics
+   - Code: `explainability_comparison.py`
 
-6. **End-to-End Explainable Architecture**
-   - Maintains interpretability at every stage
-   - White-box design vs. traditional black-box
-   - Code: `model.py::GAMedicalClassifier`
+## 🎯 Benchmark Datasets
 
-For detailed contributions, see:
-- **[CONTRIBUTIONS.md](guided%20reports/CONTRIBUTIONS.md)**: Detailed contributions
-- **[CONTRIBUTION_SUMMARY.md](CONTRIBUTION_SUMMARY.md)**: Auto-generated summary
-- **[RESEARCH_REPORT.md](guided%20reports/RESEARCH_REPORT.md)**: Complete research report
-
-## 📚 Documentation
-
-### Research Documentation
-
-- **[RESEARCH_REPORT.md](guided%20reports/RESEARCH_REPORT.md)**: Complete research report
-- **[RESEARCH_PAPER_OUTLINE.md](guided%20reports/RESEARCH_PAPER_OUTLINE.md)**: Paper outline
-- **[CONTRIBUTIONS.md](guided%20reports/CONTRIBUTIONS.md)**: Detailed contributions
-- **[QUICKSTART.md](guided%20reports/QUICKSTART.md)**: Quick start guide
-
-### Evaluation & Comparison
-
-- **[CGAN_AUGMENTATION_GUIDE.md](guided%20reports/CGAN_AUGMENTATION_GUIDE.md)**: cGAN augmentation guide
-- **Baseline Comparison**: Integrated in evaluation scripts
-
-### Auto-Generated
-
-Generate automatic contribution summary:
-```bash
-python scripts/generate_contribution_summary.py
-```
-
-## 🎯 Application: COVID-19 Detection
-
-### Dataset
+### Primary Dataset: COVID Chest X-ray
 
 - **Source**: [ieee8023/covid-chestxray-dataset](https://github.com/ieee8023/covid-chestxray-dataset)
 - **Task**: Binary classification (COVID-19 vs no-findings)
-- **Statistics**: ~575 COVID-19 cases, ~22 no-findings cases
-- **Class Imbalance**: Handled via cGAN augmentation
+- **Statistics**: ~1150 COVID-19 cases, ~44 No Finding cases
+- **Imbalance**: 26:1 ratio (handled with class-weighted loss)
 
-### Baseline Methods
+## 📈 Performance Evaluation
 
-1. **DarkCovidNet** (MDPI Review)
-   - 5-fold CV, Accuracy ≈ 98%
+### Evaluation Axes
 
-2. **VGG-19**
-   - Accuracy ≈ 98.75%
+1. **Representation Expressiveness**: GA vs pixel tensors
+2. **Explainability**: Intrinsic vs post-hoc methods (Grad-CAM)
+3. **Fair Comparison**: Same dataset, same protocol, same metrics
+4. **Statistical Validation**: Significance testing and effect sizes
 
-3. **VGG16 + cGAN** (Electronics 2022)
-   - Accuracy ≈ 99.76%
-   - Uses cGAN for class balancing
+### Running Evaluations
 
-## 📈 Performance
-
-### Expected Results
-
-Based on baseline comparisons and evaluation protocol:
-- **Accuracy**: Comparable to or exceeding baseline methods
-- **Explainability**: Intrinsic geometric component analysis
-- **Robustness**: Improved under geometric transformations
-
-### Evaluation Results
-
-Run 5-fold CV to get your results:
+**Standard classification metrics**:
 ```bash
 python -m ga_medical_imaging.evaluate_5fold_cv --data_dir data/covid_chestxray
 ```
 
-Compare with baselines:
+**Compare with CNN baselines**:
 ```bash
-python -m ga_medical_imaging.compare_with_baselines \
-    --cv_results results/5fold_cv/cv_results.json
+python -m ga_medical_imaging.compare_models --data_dir data/covid_chestxray
+```
+
+**Statistical significance testing**:
+```python
+from ga_medical_imaging.statistical_comparison import compare_multiple_metrics
+comparison = compare_multiple_metrics(ga_results, cnn_results)
 ```
 
 ## 🔮 Future Improvements
 
-- [ ] Support for 3D medical volumes (GA(4) or higher)
+- [ ] Support for 3D image volumes (GA(4) or higher)
 - [ ] Advanced GA operations (full geometric product, rotors, versors)
 - [ ] Hybrid architectures (GA layers + standard CNNs)
-- [ ] Quantitative explainability metrics
-- [ ] Clinical validation with expert evaluation
+- [ ] Additional benchmark datasets
 - [ ] Multi-class classification (beyond binary)
-- [ ] Transfer learning for medical imaging
+- [ ] Transfer learning experiments
 
 ## 📄 License
 
@@ -529,15 +589,6 @@ If you use this work, please cite:
 }
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
-
 ## 📖 References
 
 ### Geometric Algebra
@@ -547,10 +598,6 @@ Contributions are welcome! Please:
 ### Explainable AI
 - Selvaraju, R. R., et al. (2017). Grad-CAM: Visual Explanations from Deep Networks
 - Lundberg, S. M., & Lee, S. I. (2017). A Unified Approach to Interpreting Model Predictions
-
-### Medical Imaging AI
-- Litjens, G., et al. (2017). A survey on deep learning in medical image analysis
-- Esteva, A., et al. (2017). Dermatologist-level classification of skin cancer
 
 ### Baseline Methods
 - DarkCovidNet (MDPI Review)
@@ -562,6 +609,6 @@ Contributions are welcome! Please:
 
 ---
 
-**Note**: This system is designed for research and education. For real clinical use, additional validations and appropriate certifications are required.
+**Note**: This work investigates algorithmic properties of geometric algebra representations in medical imaging benchmarks. Medical imaging serves as the testbed, not the contribution. The focus is on representation learning, robustness, and explainability in CS/ML terms, not clinical diagnostic utility.
 
 **Project Status**: Active development - See issues and pull requests for latest updates.

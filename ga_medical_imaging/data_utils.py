@@ -1,5 +1,5 @@
 """
-Utilitaires pour charger et préprocesser les données d'imagerie médicale.
+Utilities for loading and preprocessing image datasets for classification.
 """
 
 import os
@@ -14,7 +14,7 @@ import glob
 
 class MedicalImageDataset(Dataset):
     """
-    Dataset pour les images médicales avec labels binaires (sain/tumeur).
+    Dataset for image classification with binary labels.
     """
     
     def __init__(
@@ -26,10 +26,10 @@ class MedicalImageDataset(Dataset):
     ):
         """
         Args:
-            image_paths: Liste des chemins vers les images
-            labels: Liste des labels (0=sain, 1=tumeur)
-            transform: Transformations à appliquer
-            image_size: Taille cible des images
+            image_paths: List of paths to images
+            labels: List of labels (0=negative class, 1=positive class)
+            transform: Transformations to apply
+            image_size: Target image size
         """
         self.image_paths = image_paths
         self.labels = labels
@@ -38,11 +38,8 @@ class MedicalImageDataset(Dataset):
         
         # Transform par défaut si non fourni
         if self.transform is None:
-            self.transform = transforms.Compose([
-                transforms.Resize(image_size),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5], std=[0.5])  # Normalisation [-1, 1]
-            ])
+            from .preprocessing import get_val_transform
+            self.transform = get_val_transform(image_size=image_size)
     
     def __len__(self) -> int:
         return len(self.image_paths)
@@ -92,20 +89,20 @@ def create_dummy_dataset(
     output_dir: str = 'data/dummy'
 ) -> Tuple[List[str], List[int]]:
     """
-    Crée un dataset factice pour tester le modèle.
-    Génère des images synthétiques simulant des images médicales.
+    Create a dummy dataset for testing the model.
+    Generates synthetic images for binary classification testing.
     
     Args:
-        num_samples: Nombre d'échantillons à générer
-        image_size: Taille des images
-        output_dir: Répertoire de sortie
+        num_samples: Number of samples to generate
+        image_size: Image size
+        output_dir: Output directory
         
     Returns:
         Tuple (image_paths, labels)
     """
     os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(os.path.join(output_dir, 'sain'), exist_ok=True)
-    os.makedirs(os.path.join(output_dir, 'tumeur'), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, 'class_0'), exist_ok=True)
+    os.makedirs(os.path.join(output_dir, 'class_1'), exist_ok=True)
     
     image_paths = []
     labels = []
@@ -113,17 +110,17 @@ def create_dummy_dataset(
     np.random.seed(42)
     
     for i in range(num_samples):
-        # Générer une image synthétique
-        image = np.random.rand(*image_size) * 0.3  # Fond sombre
+        # Generate a synthetic image
+        image = np.random.rand(*image_size) * 0.3  # Dark background
         
-        # Ajouter du bruit gaussien
+        # Add Gaussian noise
         image += np.random.normal(0, 0.1, image_size)
         
-        # Pour les tumeurs, ajouter une région plus brillante et texturée
-        label = i % 2  # Alterner entre sain et tumeur
+        # For class 1, add a brighter and textured region
+        label = i % 2  # Alternate between class 0 and class 1
         
-        if label == 1:  # Tumeur
-            # Ajouter une région anormale
+        if label == 1:  # Class 1
+            # Add an anomalous region
             center_x, center_y = np.random.randint(50, image_size[0]-50, 2)
             radius = np.random.randint(20, 40)
             
@@ -131,14 +128,14 @@ def create_dummy_dataset(
             mask = (x - center_x)**2 + (y - center_y)**2 <= radius**2
             
             image[mask] += np.random.uniform(0.3, 0.6, size=mask.sum())
-            # Ajouter de la texture
+            # Add texture
             image += np.random.normal(0, 0.15, image_size) * mask
         
-        # Normaliser et sauvegarder
+        # Normalize and save
         image = np.clip(image, 0, 1)
         image_uint8 = (image * 255).astype(np.uint8)
         
-        subdir = 'tumeur' if label == 1 else 'sain'
+        subdir = 'class_1' if label == 1 else 'class_0'
         filename = os.path.join(output_dir, subdir, f'image_{i:04d}.png')
         
         Image.fromarray(image_uint8).save(filename)
@@ -155,19 +152,19 @@ def load_dataset_from_directory(
     train_split: float = 0.8
 ) -> Tuple[DataLoader, DataLoader]:
     """
-    Charge un dataset depuis un répertoire organisé par classes.
+    Load a dataset from a directory organized by classes.
     
-    Structure attendue (supports multiple naming conventions):
+    Expected structure (supports multiple naming conventions):
         data_dir/
-            sain/ or no_findings/ or normal/  (label=0)
+            no_findings/ or normal/ or negative/  (label=0)
                 *.png, *.jpg, etc.
-            tumeur/ or covid/ or covid-19/    (label=1)
+            covid/ or covid-19/ or positive/    (label=1)
                 *.png, *.jpg, etc.
     
     Args:
-        data_dir: Répertoire racine des données
-        image_size: Taille des images
-        train_split: Proportion pour l'entraînement
+        data_dir: Root directory of the dataset
+        image_size: Target image size
+        train_split: Proportion for training
         
     Returns:
         Tuple (train_loader, val_loader)
@@ -215,8 +212,9 @@ def load_dataset_from_directory(
     all_paths = negative_paths + positive_paths
     all_labels = negative_labels + positive_labels
     
-    # Mélanger
-    indices = np.random.permutation(len(all_paths))
+    # Mélanger avec seed fixe pour reproductibilité
+    rng = np.random.RandomState(42)  # Use fixed seed for reproducibility
+    indices = rng.permutation(len(all_paths))
     all_paths = [all_paths[i] for i in indices]
     all_labels = [all_labels[i] for i in indices]
     
@@ -228,28 +226,30 @@ def load_dataset_from_directory(
     val_labels = all_labels[split_idx:]
     
     # Créer les datasets
-    train_transform = transforms.Compose([
-        transforms.Resize(image_size),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(10),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])
-    ])
+    # Use standardized preprocessing for fair comparison
+    from .preprocessing import get_train_transform, get_val_transform
     
-    val_transform = transforms.Compose([
-        transforms.Resize(image_size),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])
-    ])
+    train_transform = get_train_transform(image_size=image_size, augmentation=True)
+    val_transform = get_val_transform(image_size=image_size)
     
     train_dataset = MedicalImageDataset(train_paths, train_labels, train_transform, image_size)
     val_dataset = MedicalImageDataset(val_paths, val_labels, val_transform, image_size)
     
-    # Créer les dataloaders
+    # Créer les dataloaders avec mélange déterministe
     # Note: num_workers=0 sur macOS pour éviter les problèmes de mutex
     import platform
     num_workers = 0 if platform.system() == 'Darwin' else 2
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=num_workers)
+    
+    # Use fixed generator for reproducible shuffling
+    generator = torch.Generator()
+    generator.manual_seed(42)
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=16, 
+        shuffle=True, 
+        num_workers=num_workers,
+        generator=generator  # Deterministic shuffling
+    )
     val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=num_workers)
     
     return train_loader, val_loader

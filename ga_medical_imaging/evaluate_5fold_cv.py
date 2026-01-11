@@ -21,8 +21,9 @@ import json
 from typing import Dict, Tuple, List
 import argparse
 
-from ga_medical_imaging.model import GAMedicalClassifier
-from ga_medical_imaging.data_utils import MedicalImageDataset, load_dataset_from_directory, create_dummy_dataset
+from .model import GAMedicalClassifier
+from .data_utils import MedicalImageDataset, load_dataset_from_directory, create_dummy_dataset
+from .device_utils import get_device, print_device_info
 from torchvision import transforms
 
 
@@ -75,30 +76,66 @@ def train_fold(
     val_loader: DataLoader,
     num_epochs: int,
     learning_rate: float,
-    device: str
+    device: str,
+    handle_imbalance: bool = True
 ) -> nn.Module:
-    """Train model for one fold."""
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=5, verbose=False
+    """
+    Train model for one fold with professional training practices.
+    
+    Args:
+        handle_imbalance: If True, use class-weighted loss to handle imbalance
+    """
+    # Handle class imbalance with weighted loss
+    if handle_imbalance:
+        # Extract labels from dataset
+        labels = [train_loader.dataset[i][1] for i in range(len(train_loader.dataset))]
+        from .imbalance_handling import calculate_class_weights
+        class_weights = calculate_class_weights(labels).to(device)
+        criterion = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.1)
+    else:
+        # Use label smoothing for better generalization
+        criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    
+    # AdamW optimizer with better weight decay
+    optimizer = optim.AdamW(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=1e-4,
+        betas=(0.9, 0.999),
+        eps=1e-8
+    )
+    
+    # Cosine annealing with warm restarts for better convergence
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer,
+        T_0=10,
+        T_mult=2,
+        eta_min=1e-6
     )
     
     best_val_acc = 0.0
     best_model_state = None
+    patience_counter = 0
+    patience = 10  # Early stopping patience
     
     for epoch in range(1, num_epochs + 1):
         # Training
         model.train()
+        train_loss = 0.0
         for images, labels in train_loader:
-            images = images.to(device)
-            labels = labels.to(device)
+            images = images.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True)
             
             optimizer.zero_grad()
             logits = model(images)
             loss = criterion(logits, labels)
             loss.backward()
+            
+            # Gradient clipping for stability
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+            
+            train_loss += loss.item()
         
         # Validation
         model.eval()
@@ -108,8 +145,8 @@ def train_fold(
         
         with torch.no_grad():
             for images, labels in val_loader:
-                images = images.to(device)
-                labels = labels.to(device)
+                images = images.to(device, non_blocking=True)
+                labels = labels.to(device, non_blocking=True)
                 
                 logits = model(images)
                 loss = criterion(logits, labels)
@@ -120,11 +157,17 @@ def train_fold(
                 val_correct += (predicted == labels).sum().item()
         
         val_acc = 100 * val_correct / val_total
-        scheduler.step(val_loss)
+        scheduler.step()
         
+        # Early stopping
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_model_state = model.state_dict().copy()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                break
     
     # Load best model
     if best_model_state is not None:
@@ -301,7 +344,7 @@ def main():
     parser.add_argument('--learning_rate', type=float, default=0.001,
                        help='Learning rate')
     parser.add_argument('--device', type=str, default='auto',
-                       help='Device (cpu, cuda, or auto)')
+                       help='Device (cpu, cuda, mps, or auto)')
     parser.add_argument('--output_dir', type=str, default='results/5fold_cv',
                        help='Output directory for results')
     parser.add_argument('--n_splits', type=int, default=5,
@@ -310,12 +353,8 @@ def main():
     args = parser.parse_args()
     
     # Device
-    if args.device == 'auto':
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    else:
-        device = args.device
-    
-    print(f"Using device: {device}")
+    device = get_device(args.device)
+    print_device_info(device)
     
     # Prepare data
     print("\n" + "="*70)
@@ -356,11 +395,11 @@ def main():
     
     print(f"Total dataset size: {len(dataset)}")
     
-    # Model configuration
+    # Enhanced model configuration for better performance
     model_kwargs = {
         'num_classes': 2,
         'multivector_dim': 8,
-        'feature_dim': 128,
+        'feature_dim': 256,  # Increased capacity
         'device': device
     }
     
